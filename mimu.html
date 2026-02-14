@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Make a Wish ✨</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Poppins:wght@300;500&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #0f0c29, #302b63, #24243e);
+            font-family: 'Poppins', sans-serif;
+            touch-action: manipulation; /* Improves touch response */
+        }
+
+        /* The UI Overlay */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through to the background */
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            transition: opacity 1s ease;
+        }
+
+        .instruction {
+            font-size: 1.2rem;
+            opacity: 0.8;
+            animation: pulse 2s infinite;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.4; transform: scale(0.95); }
+        }
+
+        /* The Lantern Style */
+        .lantern {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            background: linear-gradient(to bottom, #ff9966, #ff5e62);
+            border-radius: 5px;
+            box-shadow: 0 0 20px #ff5e62, 0 0 40px #ff9966; /* Glowing effect */
+            opacity: 0;
+            transform: scale(0.5);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* The light inside the lantern */
+        .lantern::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            top: 20px;
+            background: rgba(255, 255, 220, 0.8);
+            border-radius: 50%;
+            filter: blur(5px);
+        }
+
+        /* Final Message Card (Hidden initially) */
+        .final-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 80%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.1); /* Glassmorphism */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 1.5s ease;
+            z-index: 100;
+        }
+
+        .final-message.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        .final-message h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 3.5rem;
+            margin: 0;
+            background: linear-gradient(to right, #ff9966, #ff5e62);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .final-message p {
+            color: #eee;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .moon {
+            position: absolute;
+            top: 10%;
+            right: 10%;
+            width: 80px;
+            height: 80px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 40px #fff;
+            opacity: 0;
+            transition: opacity 3s ease;
+        }
+
+        /* Stars background */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="starsContainer"></div>
+
+    <div class="moon" id="moon"></div>
+
+    <div class="ui-layer" id="uiLayer">
+        <div class="instruction">
+            <p>The sky is too dark...</p>
+            <p style="font-size: 0.9rem; margin-top: 10px;">(Tap anywhere to release a lantern)</p>
+        </div>
+    </div>
+
+    <div class="final-message" id="finalCard">
+        <h1>For My Valentine</h1>
+        <p>
+            Just like these lanterns light up the dark sky,<br>
+            You light up my entire world.
+            <br><br>
+            I don't need a wish upon a star,<br>
+            because I already have you.
+            <br><br>
+            <b>Will you be mine? ❤️</b>
+        </p>
+    </div>
+
+    <script>
+        const body = document.body;
+        const uiLayer = document.getElementById('uiLayer');
+        const finalCard = document.getElementById('finalCard');
+        const moon = document.getElementById('moon');
+        const starsContainer = document.getElementById('starsContainer');
+        
+        let lanternCount = 0;
+        const TARGET_LANTERNS = 8; // Number of clicks required
+        let gameFinished = false;
+
+        // 1. Create static stars background
+        for(let i=0; i<50; i++) {
+            const star = document.createElement('div');
+            star.classList.add('star');
+            star.style.width = Math.random() * 3 + 'px';
+            star.style.height = star.style.width;
+            star.style.left = Math.random() * 100 + 'vw';
+            star.style.top = Math.random() * 100 + 'vh';
+            star.style.animationDelay = Math.random() * 2 + 's';
+            starsContainer.appendChild(star);
+        }
+
+        // 2. Click Handler
+        document.addEventListener('click', (e) => {
+            if (gameFinished) return;
+
+            // Create Lantern at click position
+            createLantern(e.clientX, e.clientY);
+            
+            lanternCount++;
+
+            // Update Text based on progress
+            if (lanternCount === 1) {
+                uiLayer.innerHTML = '<div class="instruction"><p>Keep going...</p></div>';
+            } else if (lanternCount === 4) {
+                uiLayer.innerHTML = '<div class="instruction"><p>It\'s getting brighter...</p></div>';
+            } else if (lanternCount === TARGET_LANTERNS) {
+                finishGame();
+            }
+        });
+
+        function createLantern(x, y) {
+            const lantern = document.createElement('div');
+            lantern.classList.add('lantern');
+            
+            // Randomize size slightly
+            const scale = Math.random() * 0.5 + 0.8;
+            
+            lantern.style.left = x + 'px';
+            lantern.style.top = y + 'px';
+            lantern.style.transform = scale(0); // Start small
+            
+            body.appendChild(lantern);
+
+            // Animate using Web Animations API for smooth performance
+            const animation = lantern.animate([
+                { transform: scale(0), opacity: 0, marginTop: '0px' },
+                { transform: scale(${scale}), opacity: 1, marginTop: '-50px', offset: 0.2 }, // Bloom
+                { transform: scale(${scale}), opacity: 0, marginTop: '-100vh' } // Float up and fade
+            ], {
+                duration: 5000 + Math.random() * 2000, // 5-7 seconds float time
+                easing: 'ease-in',
+                fill: 'forwards'
+            });
+
+            // Cleanup DOM
+            animation.onfinish = () => lantern.remove();
+        }
+
+        function finishGame() {
+            gameFinished = true;
+            
+            // Fade out instructions
+            uiLayer.style.opacity = '0';
+            
+            // Show Moon
+            moon.style.opacity = '1';
+
+            // Auto-release many lanterns for celebration effect
+            let autoLanterns = 0;
+            const interval = setInterval(() => {
+                const randomX = Math.random() * window.innerWidth;
+                const randomY = window.innerHeight; // Start from bottom
+                createLantern(randomX, randomY);
+                autoLanterns++;
+                if(autoLanterns > 15) clearInterval(interval);
+            }, 300);
+
+            // Show Final Card after a slight delay
+            setTimeout(() => {
+                finalCard.classList.add('visible');
+            }, 1500);
+        }
+
+    </script>
+</body>
+</html>
